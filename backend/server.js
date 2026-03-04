@@ -10,7 +10,13 @@ dotenv.config();
 const app = express();
 
 // ================= CONFIGURACIÓN =================
-app.use(cors());
+app.use(cors({
+  origin: "https://ventadegarage-three.vercel.app",
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"]
+}));
+
+app.options("*", cors());
 app.use(express.json());
 
 // ================= CONEXIÓN A MONGO =================
