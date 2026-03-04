@@ -4,8 +4,6 @@ import cors from "cors";
 import dotenv from "dotenv";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import path from "path";
-import { fileURLToPath } from "url";
 
 dotenv.config();
 
@@ -15,16 +13,13 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Servir frontend estático
-app.use(express.static(path.join(__dirname, "../frontend")));
-
 // ================= CONEXIÓN A MONGO =================
 mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("Mongo conectado ✅"))
-  .catch(err => console.log("Error Mongo:", err));
+  .catch(err => {
+    console.error("Error conectando a Mongo:", err);
+    process.exit(1);
+  });
 
 // ================= MODELOS =================
 const usuarioSchema = new mongoose.Schema({
@@ -58,7 +53,7 @@ function authMiddleware(req, res, next) {
     req.user = verified;
     next();
   } catch (err) {
-    res.status(400).json({ msg: "Token inválido" });
+    return res.status(400).json({ msg: "Token inválido" });
   }
 }
 
@@ -113,24 +108,31 @@ app.post("/api/auth/login", async (req, res) => {
 
 // ================= OBTENER ESCULTURAS =================
 app.get("/api/esculturas", authMiddleware, async (req, res) => {
-  const esculturas = await Escultura.find({ usuario: req.user.id });
-  res.json(esculturas);
+  try {
+    const esculturas = await Escultura.find({ usuario: req.user.id });
+    res.json(esculturas);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ================= CREAR ESCULTURA =================
 app.post("/api/esculturas", authMiddleware, async (req, res) => {
-  const { nombre, precio, material } = req.body;
+  try {
+    const { nombre, precio, material } = req.body;
 
-  const nueva = new Escultura({
-    nombre,
-    precio,
-    material,
-    usuario: req.user.id
-  });
+    const nueva = new Escultura({
+      nombre,
+      precio,
+      material,
+      usuario: req.user.id
+    });
 
-  await nueva.save();
-
-  res.json(nueva);
+    await nueva.save();
+    res.json(nueva);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ================= ELIMINAR ESCULTURA =================
@@ -162,12 +164,7 @@ app.delete("/api/esculturas/:id", authMiddleware, async (req, res) => {
 
 // ================= RUTA PRINCIPAL =================
 app.get("/", (req, res) => {
-  res.send("API funcionando correctamente 🚀");
-});
-
-// ================= SPA FALLBACK =================
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../frontend/index.html"));
+  res.json({ status: "API funcionando correctamente 🚀" });
 });
 
 // ================= SERVIDOR =================
