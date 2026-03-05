@@ -1,4 +1,5 @@
-const API = "http://localhost:3000/api";
+// 🔥 API PRODUCCIÓN
+const API = "https://ventadegarage.onrender.com/api";
 
 // ================= NAVBAR =================
 document.addEventListener("DOMContentLoaded", () => {
@@ -52,7 +53,7 @@ if (registerForm) {
             const result = await res.json();
 
             if (!res.ok) {
-                alert(result.message || "Error al registrar");
+                alert(result.msg || result.error || "Error al registrar");
                 return;
             }
 
@@ -88,19 +89,17 @@ if (loginForm) {
             const result = await res.json();
 
             if (!res.ok) {
-                alert(result.message || "Credenciales incorrectas");
+                alert(result.msg || result.error || "Credenciales incorrectas");
                 return;
             }
 
-            // Guardar JWT
             localStorage.setItem("token", result.token);
-
-            // Redirigir
             window.location.href = "/index.html";
 
-        } catch (error) {
-            alert("Error del servidor");
-        }
+        }   catch (error) {
+    console.error("ERROR REAL:", error);
+    alert("Error del servidor");
+}
     });
 }
 
@@ -177,24 +176,26 @@ async function cargarEsculturas() {
         lista.innerHTML = "";
 
         data.forEach(escultura => {
-    const div = document.createElement("div");
-    div.classList.add("card");
+            const div = document.createElement("div");
+            div.classList.add("card");
 
-    div.innerHTML = `
-        <h3>${escultura.nombre}</h3>
-        <p>Precio: ₡${escultura.precio}</p>
-        <p>Material: ${escultura.material}</p>
-        <button class="btn-eliminar" data-id="${escultura._id}">
-            Eliminar
-        </button>
-    `;
+            div.innerHTML = `
+                <h3>${escultura.nombre}</h3>
+                <p>Precio: ₡${escultura.precio}</p>
+                <p>Material: ${escultura.material}</p>
+                <button class="btn-eliminar" data-id="${escultura._id}">
+                    Eliminar
+                </button>
+            `;
 
-    lista.appendChild(div);
-});
+            lista.appendChild(div);
+        });
+
     } catch (error) {
         alert("Error al cargar esculturas");
     }
 }
+
 document.addEventListener("click", async (e) => {
 
     if (e.target.classList.contains("btn-eliminar")) {
@@ -224,25 +225,3 @@ document.addEventListener("click", async (e) => {
         }
     }
 });
-
-async function eliminarEscultura(id) {
-    const token = localStorage.getItem("token");
-
-    const res = await fetch(`${API}/esculturas/${id}`, {
-        method: "DELETE",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    });
-
-    const data = await res.json();
-    console.log(data);
-
-    if (!res.ok) {
-        alert("Error al eliminar");
-        return;
-    }
-
-    alert("Eliminado correctamente");
-    cargarEsculturas();
-}
